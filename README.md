@@ -1,18 +1,13 @@
-# React + Vite
+I.Introduction
+ This project is a  interactive web map built with React, Vite, and Mapbox GL JS to explore PTAL values across London at the MSOA level. The goal is simply to give users(especially planners) an easy way to hover over areas, search by MSOA21CD, and instantly see the PTAL score and basic information for each zone. 
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+II.DataSet
+ The PTAL values come from TfL’s published datasets, and the MSOA boundaries come from the ONS 2021 generalised clipped boundary files. I merged the PTAL attributes with the MSOA geometries and uploaded the result as a tileset in Mapbox Studio, which the front‑end loads directly.
 
-Currently, two official plugins are available:
+ The styling is kept simple , which is why everything lives in a single index.css instead of splitting styles across multiple component‑specific files. The same idea applies to why most of the map logic is placed inside a single custom hook (useMapbox.js). Mapbox GL JS has a lot of event handling and spreading that across multiple components would make the project harder to maintain/ edit. 
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+III.Limitatio& Conclusion
+ There are still some  limitations. PTAL is a static indicator and doesn’t reflect time‑of‑day changes or real‑time transport conditions, so the map can only show a simplified picture of accessibility. I also considered adding a new layer within transpotation system (station/bus stops/cycle lane), but the PTLA
+ is a comperhentive  index which evaluate those as a whole, so, it is hard to put all thses elemnts in one sigle map and give out clear information at the same time.
 
-## React Compiler
-
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+ The search function relies on MSOA IDs, which aren’t intuitive for most users even with autocomplete(So it is  more suitable for those whom have planning background, rather than for all). The UI is functional but basic, and the map doesn’t yet support richer interactions like filtering, comparing areas, or switching between different datasets.
