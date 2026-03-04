@@ -5,29 +5,25 @@ import SearchBox from "./components/SearchBox";
 
 export default function App() {
   const [infoHtml, setInfoHtml] = useState("Hover over an MSOA");
+  const [autocompleteList, setAutocompleteList] = useState([]);
 
   const searchFnRef = useRef(null);
 
   return (
-    <div
-      style={{
-        position: "relative",
-        width: "100vw",
-        height: "100vh",
-        overflow: "hidden",
-      }}
-    >
+    <div style={{ position: "relative", width: "100vw", height: "100vh" }}>
       <MapView
         setInfoHtml={setInfoHtml}
         setSearchFn={(fn) => (searchFnRef.current = fn)}
+        setAutocompleteList={setAutocompleteList}
       />
 
       <Sidebar infoHtml={infoHtml} />
 
       <SearchBox
+        autocompleteList={autocompleteList}
         onSearch={(value) => {
-          const fn = searchFnRef.current?.(); // ⭐ 取出 searchByMSOA
-          fn?.(value);                        // ⭐ 执行搜索
+          const fn = searchFnRef.current?.();
+          fn?.(value);
         }}
       />
     </div>

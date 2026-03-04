@@ -26,16 +26,20 @@ function getFeatureCenter(feature) {
   return [sx / ring.length, sy / ring.length];
 }
 
-export function useMapbox(containerRef, { setInfoHtml, setSearchFn } = {}) {
+export function useMapbox(
+  containerRef,
+  { setInfoHtml, setSearchFn, setAutocompleteList } = {}
+) {
   const mapRef = useRef(null);
   const lastHoveredIdRef = useRef(null);
-  const lockedIdRef = useRef(null); // ⭐ 搜索锁定的 ID（防止 hover 覆盖）
 
   const infoFnRef = useRef(setInfoHtml);
   const searchFnRef = useRef(setSearchFn);
+  const autoListRef = useRef(setAutocompleteList);
 
   infoFnRef.current = setInfoHtml;
   searchFnRef.current = setSearchFn;
+  autoListRef.current = setAutocompleteList;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -61,7 +65,7 @@ export function useMapbox(containerRef, { setInfoHtml, setSearchFn } = {}) {
       map.setFilter("msoa-hover", ["==", ["get", "MSOA21CD"], id || ""]);
     }
 
-    // ⭐⭐⭐ 搜索功能（SideBar 调用）
+    // ⭐⭐⭐ 搜索功能（不锁定）
     const searchByMSOA = (query) => {
       const q = (query || "").trim();
       if (!q) return;
@@ -72,7 +76,6 @@ export function useMapbox(containerRef, { setInfoHtml, setSearchFn } = {}) {
       });
 
       if (!features.length) {
-        lockedIdRef.current = null;
         setHoverFilter("");
         infoFnRef.current?.(`No MSOA found with ID: <b>${q}</b>`);
         return;
@@ -81,9 +84,7 @@ export function useMapbox(containerRef, { setInfoHtml, setSearchFn } = {}) {
       const f = features[0];
       const props = f.properties || {};
 
-      // ⭐ 锁定搜索结果（hover 不会覆盖）
-      lockedIdRef.current = props.MSOA21CD;
-
+      // ⭐ 搜索后高亮，但不锁定
       setHoverFilter(props.MSOA21CD);
 
       infoFnRef.current?.(
@@ -98,7 +99,6 @@ export function useMapbox(containerRef, { setInfoHtml, setSearchFn } = {}) {
       }
     };
 
-    // ⭐ 把搜索函数暴露给外部（SideBar）
     searchFnRef.current?.(() => searchByMSOA);
 
     map.on("load", () => {
@@ -108,6 +108,17 @@ export function useMapbox(containerRef, { setInfoHtml, setSearchFn } = {}) {
       if (!baseLayer) {
         console.error("Layer not found:", BASE_LAYER_ID);
         return;
+      }
+
+      // ⭐ 自动补全数据
+      const source = map.getSource(baseLayer.source);
+      if (source && source._data) {
+        const features = source._data.features || [];
+        const list = features.map((f) => ({
+          id: f.properties.MSOA21CD,
+          name: f.properties.MSOA21NM,
+        }));
+        autoListRef.current?.(list);
       }
 
       if (!map.getLayer("msoa-hover")) {
@@ -124,10 +135,8 @@ export function useMapbox(containerRef, { setInfoHtml, setSearchFn } = {}) {
         });
       }
 
-      // ⭐ Hover 事件（但不会覆盖搜索锁定）
+      // ⭐ Hover（搜索后也能覆盖）
       map.on("mousemove", (e) => {
-        if (lockedIdRef.current) return; // ⭐ 搜索锁定时不响应 hover
-
         const features = map.queryRenderedFeatures(e.point, {
           layers: [BASE_LAYER_ID],
         });
@@ -150,12 +159,10 @@ export function useMapbox(containerRef, { setInfoHtml, setSearchFn } = {}) {
       });
 
       map.on("mouseenter", BASE_LAYER_ID, () => {
-        if (!lockedIdRef.current) map.getCanvas().style.cursor = "pointer";
+        map.getCanvas().style.cursor = "pointer";
       });
 
       map.on("mouseleave", BASE_LAYER_ID, () => {
-        if (lockedIdRef.current) return; // ⭐ 搜索锁定时不清空
-
         map.getCanvas().style.cursor = "";
         lastHoveredIdRef.current = null;
         setHoverFilter("");
